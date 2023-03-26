@@ -161,19 +161,6 @@ namespace Microsoft.IdentityModel.Tokens.Tests
                 },
             };
         }
-
-        public class JsonWebKeyTheoryData : TheoryDataBase
-        {
-            public string Crv { get; set; }
-
-            public string D { get; set; }
-
-            public bool UsePrivateKey { get; set; }
-
-            public string X { get; set; }
-
-            public string Y { get; set; }
-        }
     }
 }
 

@@ -3,6 +3,9 @@
 
 using System;
 using Microsoft.IdentityModel.Logging;
+#if NET8
+using System.Text.Json.Serialization;
+#endif
 using Microsoft.IdentityModel.Json;
 
 namespace Microsoft.IdentityModel.Tokens
@@ -31,7 +34,10 @@ namespace Microsoft.IdentityModel.Tokens
             SetInternalId();
         }
 
-        [JsonIgnore]
+#if NET8
+        [System.Text.Json.Serialization.JsonIgnore]
+#endif
+        [Microsoft.IdentityModel.Json.JsonIgnore]
         internal virtual string InternalId { get => _internalId.Value; }
 
         /// <summary>
@@ -42,13 +48,20 @@ namespace Microsoft.IdentityModel.Tokens
         /// <summary>
         /// Gets the key id of this <see cref="SecurityKey"/>.
         /// </summary>
-        [JsonIgnore]
+#if NET8
+        [System.Text.Json.Serialization.JsonIgnore]
+#endif
+        [Microsoft.IdentityModel.Json.JsonIgnore]
+
         public virtual string KeyId { get; set; }
 
         /// <summary>
         /// Gets or sets <see cref="Microsoft.IdentityModel.Tokens.CryptoProviderFactory"/>.
         /// </summary>
-        [JsonIgnore]
+#if NET8
+        [System.Text.Json.Serialization.JsonIgnore]
+#endif
+        [Microsoft.IdentityModel.Json.JsonIgnore]
         public CryptoProviderFactory CryptoProviderFactory
         {
             get

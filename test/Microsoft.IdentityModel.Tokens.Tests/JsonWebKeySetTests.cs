@@ -86,16 +86,6 @@ namespace Microsoft.IdentityModel.Tokens.Tests
         }
 
         [Fact]
-        public void GetSets()
-        {
-        }
-
-        [Fact]
-        public void Publics()
-        {
-        }
-
-        [Fact]
         public void SigningKeysExtensibility()
         {
             var context = new CompareContext($"{this}.SigningKeysExtensibility");

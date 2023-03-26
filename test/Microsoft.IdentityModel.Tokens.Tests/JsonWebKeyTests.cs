@@ -3,53 +3,87 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Tracing;
 using System.Security.Cryptography;
-using System.Text;
 using Microsoft.IdentityModel.Json;
 using Microsoft.IdentityModel.TestUtils;
 using Xunit;
-
-#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
 
 namespace Microsoft.IdentityModel.Tokens.Tests
 {
     public class JsonWebKeyTests
     {
-        [Theory, MemberData(nameof(JsonWebKeyDataSet))]
-        public void Constructors(string json, JsonWebKey compareTo, ExpectedException ee)
+        [Theory, MemberData(nameof(ConstructorDataSet))]
+        public void Constructors(JsonWebKeyTheoryData theoryData)
         {
             var context = new CompareContext();
             try
             {
-                var jsonWebKey = new JsonWebKey(json);
-                ee.ProcessNoException(context);
-                if (compareTo != null)
-                    IdentityComparer.AreEqual(jsonWebKey, compareTo, context);
+                var jsonWebKey = new JsonWebKey(theoryData.Json);
+                theoryData.ExpectedException.ProcessNoException(context);
+                if (theoryData.ExpectedValue != null)
+                {
+                    IdentityComparer.AreEqual(jsonWebKey, theoryData.ExpectedValue, context);
+#if NET8
+                    JsonWebKeyNet8 jsonWebKeyNet8 = new JsonWebKeyNet8(theoryData.Json);
+                    IdentityComparer.AreEqual(jsonWebKeyNet8, theoryData.ExpectedValue, context);
+#endif
+                }
             }
             catch (Exception ex)
             {
-                ee.ProcessException(ex, context.Diffs);
+                theoryData.ExpectedException.ProcessException(ex, context.Diffs);
             }
 
             TestUtilities.AssertFailIfErrors(context);
         }
 
-        public static TheoryData<string, JsonWebKey, ExpectedException> JsonWebKeyDataSet
+        public static TheoryData<JsonWebKeyTheoryData> ConstructorDataSet
         {
             get
             {
-                var dataset = new TheoryData<string, JsonWebKey, ExpectedException>();
+                var theoryData = new TheoryData<JsonWebKeyTheoryData>();
+                theoryData.Add(new JsonWebKeyTheoryData("Null_Json")
+                {
+                    ExpectedException = ExpectedException.ArgumentNullException(substringExpected: "json")
+                });
 
-                dataset.Add(null, null, ExpectedException.ArgumentNullException(substringExpected: "json"));
-                dataset.Add(DataSets.JsonWebKeyFromPingString1, DataSets.JsonWebKeyFromPing1, ExpectedException.NoExceptionExpected);
-                dataset.Add(DataSets.JsonWebKeyString1, DataSets.JsonWebKey1, ExpectedException.NoExceptionExpected);
-                dataset.Add(DataSets.JsonWebKeyString2, DataSets.JsonWebKey2, ExpectedException.NoExceptionExpected);
-                dataset.Add(DataSets.JsonWebKeyBadFormatString1, null, ExpectedException.ArgumentException(inner: typeof(JsonReaderException)));
-                dataset.Add(DataSets.JsonWebKeyBadFormatString2, null, ExpectedException.ArgumentException(inner: typeof(JsonSerializationException)));
-                dataset.Add(DataSets.JsonWebKeyBadX509String, DataSets.JsonWebKeyBadX509Data, ExpectedException.NoExceptionExpected);
+                theoryData.Add(new JsonWebKeyTheoryData("JsonWebKeyFromPingString1")
+                {
+                    ExpectedValue = DataSets.JsonWebKeyFromPing1,
+                    Json = DataSets.JsonWebKeyFromPingString1
+                });
 
-                return dataset;
+                theoryData.Add(new JsonWebKeyTheoryData("JsonWebKeyString1")
+                {
+                    ExpectedValue = DataSets.JsonWebKey1,
+                    Json = DataSets.JsonWebKeyString1
+                });
+
+                theoryData.Add(new JsonWebKeyTheoryData("JsonWebKeyString2")
+                {
+                    ExpectedValue = DataSets.JsonWebKey2,
+                    Json = DataSets.JsonWebKeyString2
+                });
+
+                theoryData.Add(new JsonWebKeyTheoryData("JsonWebKeyBadFormatString1")
+                {
+                    ExpectedException = ExpectedException.ArgumentException(inner: typeof(JsonReaderException)),
+                    Json = DataSets.JsonWebKeyBadFormatString1
+                });
+
+                theoryData.Add(new JsonWebKeyTheoryData("JsonWebKeyBadFormatString2")
+                {
+                    ExpectedException = ExpectedException.ArgumentException(inner: typeof(JsonSerializationException)),
+                    Json = DataSets.JsonWebKeyBadFormatString2
+                });
+
+                theoryData.Add(new JsonWebKeyTheoryData("JsonWebKeyBadX509String")
+                {
+                    ExpectedValue = DataSets.JsonWebKeyBadX509Data,
+                    Json = DataSets.JsonWebKeyBadX509String
+                });
+
+                return theoryData;
             }
         }
 
@@ -116,11 +150,6 @@ namespace Microsoft.IdentityModel.Tokens.Tests
             TestUtilities.AssertFailIfErrors("JsonWebKey_GetSets", errors);
         }
 
-        [Fact]
-        public void Publics()
-        {
-        }
-
         // Tests to make sure conditional property serialization for JsonWebKeys is working properly.
         [Fact]
         public void ConditionalPropertySerialization()
@@ -141,6 +170,7 @@ namespace Microsoft.IdentityModel.Tokens.Tests
             var jsonString1 = JsonConvert.SerializeObject(jsonWebKeyEmptyCollections);
             if (jsonString1.Contains("key_ops"))
                 context.Diffs.Add("key_ops is empty and should not be present in serialized JsonWebKey");
+
             if (jsonString1.Contains("x5c"))
                 context.Diffs.Add("x5c is empty and should not be present in serialized JsonWebKey");
 
@@ -150,6 +180,7 @@ namespace Microsoft.IdentityModel.Tokens.Tests
             var jsonString2 = JsonConvert.SerializeObject(jsonWebKeyWithCollections);
             if (!jsonString2.Contains("key_ops"))
                 context.Diffs.Add("key_ops is non-empty and should be present in serialized JsonWebKey");
+
             if (!jsonString2.Contains("x5c"))
                 context.Diffs.Add("x5c is non-empty and should be present in serialized JsonWebKey");
 
@@ -362,5 +393,3 @@ namespace Microsoft.IdentityModel.Tokens.Tests
         }
     }
 }
-
-#pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
