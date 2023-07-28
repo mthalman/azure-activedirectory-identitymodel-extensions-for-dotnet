@@ -11,7 +11,7 @@ using Microsoft.IdentityModel.TestUtils;
 using Newtonsoft.Json;
 using Xunit;
 
-namespace Microsoft.IdentityModel.Tokens.Tests
+namespace Microsoft.IdentityModel.Tokens.Json.Tests
 {
     public class JsonWebKeySetTests
     {
@@ -81,16 +81,6 @@ namespace Microsoft.IdentityModel.Tokens.Tests
                 context.Diffs.Add("jsonWebKeys.AdditionalData.Count != 0");
 
             TestUtilities.AssertFailIfErrors(context);
-        }
-
-        [Fact]
-        public void GetSets()
-        {
-        }
-
-        [Fact]
-        public void Publics()
-        {
         }
 
         [Fact]
