@@ -60,7 +60,7 @@ namespace Microsoft.IdentityModel.Tokens.Json
         internal static string GetPropertyName(ref Utf8JsonReader reader, string className, bool advanceReader)
         {
             if (reader.TokenType == JsonTokenType.None)
-                reader.Read();
+                ReaderRead(ref reader);
 
             if (reader.TokenType != JsonTokenType.PropertyName)
                 throw LogHelper.LogExceptionMessage(CreateJsonReaderExceptionInvalidType(ref reader, "JsonTokenType.PropertyName", string.Empty, className));
@@ -68,7 +68,7 @@ namespace Microsoft.IdentityModel.Tokens.Json
             if (advanceReader)
             {
                 string propertyName = reader.GetString();
-                reader.Read();
+                ReaderRead(ref reader);
                 return propertyName;
             }
 
@@ -78,15 +78,27 @@ namespace Microsoft.IdentityModel.Tokens.Json
         internal static bool IsReaderAtTokenType(ref Utf8JsonReader reader, JsonTokenType tokenType, bool advanceReader)
         {
             if (reader.TokenType == JsonTokenType.None)
-                reader.Read();
+                ReaderRead(ref reader);
 
             if (reader.TokenType != tokenType)
                 return false;
 
             if (advanceReader)
-                reader.Read();
+                ReaderRead(ref reader);
 
             return true;
+        }
+
+        internal static bool ReaderRead(ref Utf8JsonReader reader)
+        {
+            try
+            {
+                return reader.Read();
+            }
+            catch (JsonException ex)
+            {
+                throw new JsonException(ex.Message, ex);
+            }
         }
 
         internal static bool ReadBoolean(ref Utf8JsonReader reader, string propertyName, string className, bool advanceReader)
@@ -95,7 +107,7 @@ namespace Microsoft.IdentityModel.Tokens.Json
             {
                 bool retVal = reader.GetBoolean();
                 if (advanceReader)
-                    reader.Read();
+                    ReaderRead(ref reader);
 
                 return retVal;
             }
@@ -120,7 +132,7 @@ namespace Microsoft.IdentityModel.Tokens.Json
                 }
 
                 if (advanceReader)
-                    reader.Read();
+                    ReaderRead(ref reader);
 
                 return retVal;
             }
@@ -145,7 +157,7 @@ namespace Microsoft.IdentityModel.Tokens.Json
                 }
 
                 if (advanceReader)
-                    reader.Read();
+                    ReaderRead(ref reader);
 
                 return retVal;
             }
@@ -157,27 +169,33 @@ namespace Microsoft.IdentityModel.Tokens.Json
         internal static object ReadObject(ref Utf8JsonReader reader, bool advanceReader)
         {
             object retVal = null;
-            using (JsonDocument jsonDocument = JsonDocument.ParseValue(ref reader))
-            {
-                if (jsonDocument.RootElement.ValueKind == JsonValueKind.Null)
-                    return null;
 
-                retVal = jsonDocument.RootElement.Clone();
-            }
+            // TODO - how does this work with null?
+            retVal = JsonSerializer.Deserialize<object>(ref reader);
+
+            //using (JsonDocument jsonDocument = JsonDocument.ParseValue(ref reader))
+            //{
+            //    if (jsonDocument.RootElement.ValueKind == JsonValueKind.Null)
+            //        return null;
+
+            //    retVal = jsonDocument.RootElement.Clone();
+            //}
 
             if (advanceReader)
-                reader.Read();
+                ReaderRead(ref reader);
 
             return retVal;
         }
 
         internal static IList<object> ReadObjects(ref Utf8JsonReader reader, IList<object> objects, string propertyName, string className, bool advanceReader)
         {
+            _ = objects ?? throw LogHelper.LogExceptionMessage(new ArgumentNullException(nameof(objects)));
+
             // returning null keeps the same logic as JsonSerialization.ReadObject
             if (reader.TokenType == JsonTokenType.Null)
             {
                 if (advanceReader)
-                    reader.Read();
+                    ReaderRead(ref reader);
 
                 return null;
             }
@@ -195,17 +213,18 @@ namespace Microsoft.IdentityModel.Tokens.Json
 
                 objects.Add(ReadObject(ref reader, false));
 
-            } while (reader.Read());
+            } while (ReaderRead(ref reader));
 
             return objects;
         }
 
-        internal static string ReadString(ref Utf8JsonReader reader, string propertyName, string className, bool advanceReader)
+        internal static string ReadString(ref Utf8JsonReader reader, string propertyName, string className, bool advanceReader = true)
         {
+            // Todo - check to make sure returning null keeps the same logic as JsonSerialization.ReadObject
             if (reader.TokenType == JsonTokenType.Null)
             {
                 if (advanceReader)
-                    reader.Read();
+                    ReaderRead(ref reader);
 
                 return null;
             }
@@ -216,17 +235,19 @@ namespace Microsoft.IdentityModel.Tokens.Json
 
             string retVal = reader.GetString();
             if (advanceReader)
-                reader.Read();
+                ReaderRead(ref reader);
 
             return retVal;
         }
 
         internal static IList<string> ReadStrings(ref Utf8JsonReader reader, IList<string> strings, string propertyName, string className, bool advanceReader)
         {
+            _ = strings ?? throw LogHelper.LogArgumentNullException(nameof(strings));
+
             if (reader.TokenType == JsonTokenType.Null)
             {
                 if (advanceReader)
-                    reader.Read();
+                    ReaderRead(ref reader);
 
                 return null;
             }
@@ -243,6 +264,9 @@ namespace Microsoft.IdentityModel.Tokens.Json
                 strings.Add(ReadString(ref reader, propertyName, className, false));
 
             } while (reader.Read());
+
+            if (advanceReader)
+                ReaderRead(ref reader);
 
             return strings;
         }
